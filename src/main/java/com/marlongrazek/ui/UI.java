@@ -391,4 +391,66 @@ public final class UI {
             return itemStack.toItemStack();
         }
     }
+
+    public static class Section {
+
+        Integer width;
+        Integer height;
+        HashMap<Integer, Item> items = new HashMap<>();
+        Boolean reverse = false;
+
+        public Section(Integer width, Integer height) {
+            this.width = width;
+            this.height = height;
+        }
+
+        public void addItem(Item item) {
+            if (!items.isEmpty()) {
+                for(int i = 0; i < width * height; i++) {
+                    if(!items.containsKey(i)) {
+                        items.put(i, item);
+                        break;
+                    }
+                }
+            } else items.put(0, item);
+        }
+
+        public void fill(Item item) {
+            for (int i = 0; i < width * height; i++) addItem(item);
+        }
+
+        public void setItem(Item item, Integer slot) {
+            items.put(slot, item);
+        }
+
+        public void setItems(HashMap<Integer, Item> items) {
+            this.items = items;
+        }
+
+        public void reverse() {
+            reverse = true;
+        }
+
+        public HashMap<Integer, Item> getItems() {
+            return items;
+        }
+
+        public Integer getWidth() {
+            return width;
+        }
+
+        public Integer getHeight() {
+            return height;
+        }
+
+        public Integer getSlot(Item item) {
+            for (int i = 0; i < width * height; i++) if (items.get(i) != null) if (items.get(i).equals(item)) return i;
+            return null;
+        }
+
+        public Boolean isReversed() {
+            return reverse;
+        }
+
+    }
 }
