@@ -1,14 +1,18 @@
 package com.marlongrazek.ui;
 
+import com.marlongrazek.builder.ItemStackBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public final class UI {
@@ -179,5 +183,149 @@ public final class UI {
 
     public static class Item {
 
+        private int amount = 1;
+        private Consumer<ClickType> clickAction;
+        private Map<Enchantment, Integer> enchantments = new HashMap<>();
+        private List<ItemFlag> itemFlags = new ArrayList<>();
+        private ItemMeta itemMeta;
+        private List<String> lore = new ArrayList<>();
+        private Material material;
+        private String name;
+
+        public Item() {
+        }
+
+        public Item(String name) {
+            this.name = name;
+        }
+
+        public Item(Material material) {
+            this.material = material;
+        }
+
+        public Item(String name, Material material) {
+            this.name = name;
+            this.material = material;
+        }
+
+        public void addEnchantment(Enchantment enchantment, Integer level) {
+            enchantments.put(enchantment, level);
+        }
+
+        public void addGlow() {
+            addEnchantment(Enchantment.ARROW_DAMAGE, 1);
+            addItemFlag(ItemFlag.HIDE_ENCHANTS);
+        }
+
+        public void addItemFlag(ItemFlag itemFlag) {
+            itemFlags.add(itemFlag);
+        }
+
+        public void addLoreLines(String... lines) {
+            Collections.addAll(lore, lines);
+        }
+
+        public void clearLore() {
+            this.lore.clear();
+        }
+
+        public static Item fromItemStack(ItemStack itemStack) {
+            ItemMeta itemMeta;
+            Material material;
+            Item item = new Item();
+
+            if (itemStack.getItemMeta() != null) {
+                itemMeta = itemStack.getItemMeta();
+                material = itemStack.getType();
+                item.setItemMeta(itemMeta);
+                item.setMaterial(material);
+            }
+            return item;
+        }
+
+        public int getAmount() {
+            return amount;
+        }
+
+        public Consumer<ClickType> getClickAction() {
+            return this.clickAction;
+        }
+
+        public Map<Enchantment, Integer> getEnchantments() {
+            return enchantments;
+        }
+
+        public List<ItemFlag> getItemFlags() {
+            return itemFlags;
+        }
+
+        public ItemMeta getItemMeta() {
+            return this.itemMeta;
+        }
+
+        public List<String> getLore() {
+            return this.lore;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void onClick(Consumer<ClickType> clickAction) {
+            this.clickAction = clickAction;
+        }
+
+        public void setAmount(int amount) {
+            this.amount = amount;
+        }
+
+        public void setEnchantments(HashMap<Enchantment, Integer> enchantments) {
+            this.enchantments = enchantments;
+        }
+
+        public void setItemFlags(List<ItemFlag> itemFlags) {
+            this.itemFlags = itemFlags;
+        }
+
+        public void setItemMeta(ItemMeta meta) {
+            this.itemMeta = meta;
+        }
+
+        public void setLore(List<String> lore) {
+            this.lore = lore;
+        }
+
+        public void setLore(String... lore) {
+            this.lore = Arrays.asList(lore);
+        }
+
+        public void setLoreLine(String line, int index) {
+            this.lore.set(index, line);
+        }
+
+        public void setMaterial(Material material) {
+            this.material = material;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public ItemStack toItemStack() {
+
+            ItemStackBuilder itemStack = new ItemStackBuilder(this.material);
+
+            if (itemMeta != null) itemStack.setItemMeta(this.itemMeta);
+            itemStack.setName(this.name);
+            itemStack.setLore(new ArrayList<>(this.lore));
+            itemStack.setItemFlags(new ArrayList<>(itemFlags));
+            itemStack.setEnchantments(new HashMap<>(enchantments));
+            itemStack.setAmount(amount);
+            return itemStack.toItemStack();
+        }
     }
 }
