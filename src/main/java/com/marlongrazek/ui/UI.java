@@ -242,6 +242,21 @@ public final class UI {
         public Consumer<Player> getUpdateAction() {
             return updateAction;
         }
+
+        public void setSection(Section section, int start) {
+
+            ArrayList<Integer> slots = new ArrayList<>(section.getItems().keySet());
+            if (section.isReversed()) Collections.reverse(slots);
+
+            for (int i = 0; i < section.width * section.height; i++) {
+
+                int y = (int) Math.ceil((float) (i + 1) / section.getWidth());
+                int x = (i - section.getWidth() * (y - 1));
+
+                for (int slot : slots)
+                    if (i == slot) setItem(section.getItems().get(slot), start + x + 9 * (y - 1));
+            }
+        }
     }
 
     public static class Item {
