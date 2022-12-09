@@ -1,17 +1,27 @@
 package com.marlongrazek.ui;
 
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
-public final class UI extends JavaPlugin {
+public final class UI {
 
-    @Override
-    public void onEnable() {
-        // Plugin startup logic
+    private final Plugin plugin;
+    private final Player player;
+
+    public UI(Plugin plugin, Player player) {
+        this.plugin = plugin;
+        this.player = player;
+    }
+
+    public void open() {
 
     }
 
-    @Override
-    public void onDisable() {
-        // Plugin shutdown logic
+    public void close() {
+
+    }
+
+    public void update() {
+
     }
 }
