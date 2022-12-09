@@ -1,0 +1,4 @@
+name: UI2
+version: '${project.version}'
+main: com.marlongrazek.ui.UI
+api-version: 1.19
