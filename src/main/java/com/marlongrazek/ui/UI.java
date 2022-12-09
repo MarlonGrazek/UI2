@@ -5,7 +5,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -22,6 +27,7 @@ public final class UI {
     private Inventory inventory;
     private Consumer<Player> openAction;
     private Consumer<Player> closeAction;
+    private final Events events = new Events();
 
     private final List<Page> history = new ArrayList<>();
 
@@ -31,6 +37,7 @@ public final class UI {
     }
 
     public void open() {
+        Bukkit.getPluginManager().registerEvents(events, plugin);
         player.openInventory(inventory);
         if(openAction != null) openAction.accept(player);
     }
@@ -66,6 +73,7 @@ public final class UI {
     }
 
     public void close() {
+        HandlerList.unregisterAll(events);
         player.closeInventory();
         if(closeAction != null) this.closeAction.accept(player);
         history.clear();
@@ -83,6 +91,47 @@ public final class UI {
         Page page = getPageFromHistory(0);
         page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
         if(page.getUpdateAction() != null) page.getUpdateAction().accept(player);
+    }
+
+    public class Events implements Listener {
+
+        @EventHandler
+        public void onClose(InventoryCloseEvent e) {
+
+            if(inventory == null) return;
+
+            Player player = (Player) e.getPlayer();
+            Page page = getPageFromHistory(0);
+
+            // PREVENT CLOSE
+            if (page.preventClose) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> player.openInventory(inventory), 1);
+                return;
+            }
+
+            if (page.getCloseAction() != null) page.getCloseAction().accept(player);
+            HandlerList.unregisterAll(events);
+        }
+
+        @EventHandler
+        public void onClick(InventoryClickEvent e) {
+
+            if(inventory == null) return;
+
+            Page page = history.get(history.size() - 1);
+
+            if (e.getInventory() != inventory) return;
+            if (e.getView().getTopInventory() != e.getClickedInventory()) return;
+
+            for(Item item : page.getItems().values()) {
+                if(item == null || e.getCurrentItem() == null) continue;
+                if(!e.getCurrentItem().equals(item.toItemStack())) continue;
+                e.setCancelled(true);
+                if(item.getClickAction() != null) item.getClickAction().accept(e.getClick());
+                break;
+            }
+        }
+
     }
 
     public static class Page {
