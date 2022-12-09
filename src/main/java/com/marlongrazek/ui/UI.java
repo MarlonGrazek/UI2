@@ -78,7 +78,7 @@ public final class UI {
     public void update() {
         Page page = getPageFromHistory(0);
         page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
-        if(page.getOpenAction() != null) page.getOpenAction().accept(player);
+        if(page.getUpdateAction() != null) page.getUpdateAction().accept(player);
     }
 
     public static class Page {
@@ -89,6 +89,7 @@ public final class UI {
         private boolean preventClose = false;
         private Consumer<Player> openAction;
         private Consumer<Player> closeAction;
+        private Consumer<Player> updateAction;
 
         public Page(String title, int size) {
             this.title = title;
@@ -159,12 +160,20 @@ public final class UI {
             this.closeAction = closeAction;
         }
 
+        public void onUpdate(Consumer<Player> updateAction) {
+            this.updateAction = updateAction;
+        }
+
         public Consumer<Player> getOpenAction() {
             return openAction;
         }
 
         public Consumer<Player> getCloseAction() {
             return closeAction;
+        }
+
+        public Consumer<Player> getUpdateAction() {
+            return updateAction;
         }
     }
 
