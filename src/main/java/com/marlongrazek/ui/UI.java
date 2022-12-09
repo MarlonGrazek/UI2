@@ -1,9 +1,13 @@
 package com.marlongrazek.ui;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -11,6 +15,11 @@ public final class UI {
 
     private final Plugin plugin;
     private final Player player;
+    private Inventory inventory;
+    private Consumer<Player> openAction;
+    private Consumer<Player> closeAction;
+
+    private final List<Page> history = new ArrayList<>();
 
     public UI(Plugin plugin, Player player) {
         this.plugin = plugin;
@@ -18,15 +27,58 @@ public final class UI {
     }
 
     public void open() {
+        player.openInventory(inventory);
+        if(openAction != null) openAction.accept(player);
+    }
 
+    public void setPage(Page page) {
+        inventory = Bukkit.createInventory(null, page.getSize(), page.getTitle());
+        page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
+        if(page.getOpenAction() != null) page.getOpenAction().accept(player);
+        history.add(page);
+    }
+
+    public void setPageFromHistory(int index) {
+
+        // HISTORY PAGE IS NULL
+        if(history.get(history.size() - 1 - index) == null) {
+            close();
+            return;
+        }
+
+        // SET PAGE
+        Page page = history.get(history.size() - 1 - index);
+        for(int i = 0; i < index; i++) history.remove(history.size() - 1);
+        setPage(page);
+    }
+
+    public Page getPageFromHistory(int index) {
+
+        // HISTORY PAGE IS NULL
+        if(history.get(history.size() - 1 - index) == null) return null;
+
+        // PAGE FROM HISTORY
+        return history.get(history.size() - 1 - index);
     }
 
     public void close() {
+        player.closeInventory();
+        if(closeAction != null) this.closeAction.accept(player);
+        history.clear();
+    }
 
+    public void onOpen(Consumer<Player> openAction) {
+        this.openAction = openAction;
+    }
+
+    public void onClose(Consumer<Player> closeAction) {
+        this.closeAction = closeAction;
     }
 
     public void update() {
-
+        Page page = getPageFromHistory(0);
+        page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
+        if(page.getOpenAction() != null) page.getOpenAction().accept(player);
     }
 
     public static class Page {
