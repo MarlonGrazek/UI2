@@ -28,6 +28,7 @@ public final class UI {
     private Consumer<Player> openAction;
     private Consumer<Player> closeAction;
     private final Events events = new Events();
+    boolean open = false;
 
     private final List<Page> history = new ArrayList<>();
 
@@ -38,45 +39,56 @@ public final class UI {
 
     public void open() {
         Bukkit.getPluginManager().registerEvents(events, plugin);
+        open = true;
+        if (openAction != null) openAction.accept(player);
         player.openInventory(inventory);
-        if(openAction != null) openAction.accept(player);
+    }
+
+    private void openPage(Page newPage) {
+        Page previousPage = getPageFromHistory(0);
+        inventory = Bukkit.createInventory(null, newPage.getSize(), newPage.getTitle());
+        newPage.getItems().keySet().forEach(slot -> inventory.setItem(slot, newPage.getItems().get(slot).toItemStack()));
+        if (open) player.openInventory(inventory);
+        if (previousPage != null && previousPage.getCloseAction() != null) previousPage.getCloseAction().accept(player);
+        if (newPage.getOpenAction() != null) newPage.getOpenAction().accept(player);
     }
 
     public void setPage(Page page) {
-        inventory = Bukkit.createInventory(null, page.getSize(), page.getTitle());
-        page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
-        if(page.getOpenAction() != null) page.getOpenAction().accept(player);
-        history.add(page);
+        openPage(page);
+        if (history.isEmpty() || !getPageFromHistory(0).equals(page)) history.add(page);
     }
 
     public void setPageFromHistory(int index) {
 
         // HISTORY PAGE IS NULL
-        if(history.get(history.size() - 1 - index) == null) {
-            close();
+        if(getPageFromHistory(index) == null) {
+            player.closeInventory();
             return;
         }
 
         // SET PAGE
-        Page page = history.get(history.size() - 1 - index);
-        for(int i = 0; i < index; i++) history.remove(history.size() - 1);
-        setPage(page);
+        openPage(getPageFromHistory(index));
+        for (int i = 0; i < index; i++) history.remove(history.size() - 1);
     }
 
     public Page getPageFromHistory(int index) {
 
         // HISTORY PAGE IS NULL
-        if(history.get(history.size() - 1 - index) == null) return null;
+        if (history.isEmpty() || history.size() - 1 < index) return null;
 
         // PAGE FROM HISTORY
         return history.get(history.size() - 1 - index);
     }
 
-    public void close() {
+    private void close() {
         HandlerList.unregisterAll(events);
-        player.closeInventory();
-        if(closeAction != null) this.closeAction.accept(player);
+        open = false;
+        if (closeAction != null) closeAction.accept(player);
         history.clear();
+    }
+
+    public boolean isOpen() {
+        return open;
     }
 
     public void onOpen(Consumer<Player> openAction) {
@@ -90,7 +102,7 @@ public final class UI {
     public void update() {
         Page page = getPageFromHistory(0);
         page.getItems().keySet().forEach(slot -> inventory.setItem(slot, page.getItems().get(slot).toItemStack()));
-        if(page.getUpdateAction() != null) page.getUpdateAction().accept(player);
+        if (page.getUpdateAction() != null) page.getUpdateAction().accept(player);
     }
 
     public class Events implements Listener {
@@ -98,7 +110,7 @@ public final class UI {
         @EventHandler
         public void onClose(InventoryCloseEvent e) {
 
-            if(inventory == null) return;
+            if (inventory == null || inventory != e.getInventory()) return;
 
             Player player = (Player) e.getPlayer();
             Page page = getPageFromHistory(0);
@@ -110,24 +122,26 @@ public final class UI {
             }
 
             if (page.getCloseAction() != null) page.getCloseAction().accept(player);
-            HandlerList.unregisterAll(events);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.getOpenInventory().getTopInventory() != inventory) close();
+            }, 1);
         }
 
         @EventHandler
         public void onClick(InventoryClickEvent e) {
 
-            if(inventory == null) return;
+            if (inventory == null) return;
 
             Page page = history.get(history.size() - 1);
 
             if (e.getInventory() != inventory) return;
             if (e.getView().getTopInventory() != e.getClickedInventory()) return;
 
-            for(Item item : page.getItems().values()) {
-                if(item == null || e.getCurrentItem() == null) continue;
-                if(!e.getCurrentItem().equals(item.toItemStack())) continue;
+            for (Item item : page.getItems().values()) {
+                if (item == null || e.getCurrentItem() == null) continue;
+                if (!e.getCurrentItem().equals(item.toItemStack())) continue;
                 e.setCancelled(true);
-                if(item.getClickAction() != null) item.getClickAction().accept(e.getClick());
+                if (item.getClickAction() != null) item.getClickAction().accept(e.getClick());
                 break;
             }
         }
